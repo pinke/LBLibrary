@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+           id="com.livebos.cordova.library"
+      version="0.0.1-dev">
+    <name>LiveBOSLibrary</name>
+    <description>Cordova LiveBOS Library Plugin</description>
+    <license>Apache 2.0</license>
+    <keywords>cordova,liveBOS,library</keywords>
+    <repo>git://github.com/pinke/LBLibrary.git</repo>
+    <issue>https://github.com/pinke/LBLibrary/issues</issue>
+
+    <engines>
+      <engine name="cordova" version=">=3.1.0" /><!-- Needs cordova/urlutil -->
+    </engines>
+    <!-- android -->
+    <platform name="android">
+        <js-module src="www/LiveBOSLibrary.js" name="LiveBOSLibrary">
+            <clobbers target="window.launch" />
+        </js-module>
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="LiveBOSLibrary">
+                <param name="android-package" value="com.livebos.cordova.library.LBLibrary"/>
+            </feature>
+        </config-file>
+        <source-file src="src/android/com/livebos/cordova/library/LBLibrary.java" target-dir="src/com/livebos/cordova/library" />
+    </platform>
+
+</plugin>
