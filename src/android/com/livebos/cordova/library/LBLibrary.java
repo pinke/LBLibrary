@@ -49,19 +49,28 @@ public class LBLibrary extends CordovaPlugin {
                 @Override
                 public void run() {
                     try {
-                        if(serviceURL.equals("samples")){
+                        if (serviceURL.contains("samples")) {
                             openSample();
                             return;
+                        } else if (serviceURL.trim().length() > 0) {
+                            onLoadStart(serviceURL);
+                            if (openByPagName(serviceURL, activityName)) {
+                                   onLoadSuccess(serviceURL);
+                            }else{
+                                onLoadFailure(serviceURL);
+                            }
                         }
                         Intent intent = new Intent(activityName);
                         intent.setData(Uri.parse(serviceURL));
                         cordova.getActivity().startActivity(intent); //判断安装及版本等
                     } catch (android.content.ActivityNotFoundException e) {
                         LOG.e(LOG_TAG, "Error  " + serviceURL + ": " + e.toString());
+                    } catch (Throwable e) {
+                        LOG.e(LOG_TAG, "Error  " + serviceURL + ": " + e.toString());
                     }
                 }
             });
-        } else if(action.equals("close")) {
+        } else if (action.equals("close")) {
             closeApp();
         } else {
             return false;
@@ -69,38 +78,50 @@ public class LBLibrary extends CordovaPlugin {
         return true;
     }
 
-    private void closeApp() {
-            this.cordova.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                   //TODO: close app
-                }
-            });
-
-            try {
-                JSONObject obj = new JSONObject();
-                obj.put("type", EXIT_EVENT);
-                sendUpdate(obj, false);
-            } catch (JSONException ex) {
-                Log.d(LOG_TAG, "Should never happen");
-            }
+    private void onLoadStart(String serviceURL) {
+        onLoad(serviceURL,"start")
+    }
+    private void onLoadSuccess(String serviceURL) {
+        onLoad(serviceURL,"load")
+    }
+    private void onExit(String serviceURL) {
+        onLoad(serviceURL,"exit")
+    }
+    private void onLoadFailure(String serviceURL) {
+        onLoad(serviceURL,"error")
     }
 
-    /**
-     * Create a new plugin success result and send it back to JavaScript
-     *
-     * @param obj a JSONObject contain event payload information
-     */
+    private void onLoad(String serviceURL,String type) {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("type", type);
+            obj.put("target", serviceURL);
+            sendUpdate(obj, true);
+        } catch (JSONException ex) {
+            Log.d(LOG_TAG, "Should never happen");
+        }
+    }
+    private void closeApp() {
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //TODO: close app
+            }
+        });
+
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("type", EXIT_EVENT);
+            sendUpdate(obj, false);
+        } catch (JSONException ex) {
+            Log.d(LOG_TAG, "Should never happen");
+        }
+    }
+
     private void sendUpdate(JSONObject obj, boolean keepCallback) {
         sendUpdate(obj, keepCallback, PluginResult.Status.OK);
     }
 
-    /**
-     * Create a new plugin result and send it back to JavaScript
-     *
-     * @param obj a JSONObject contain event payload information
-     * @param status the status code to return to the JavaScript environment
-     */
     private void sendUpdate(JSONObject obj, boolean keepCallback, PluginResult.Status status) {
         if (callbackContext != null) {
             PluginResult result = new PluginResult(status, obj);
@@ -111,11 +132,13 @@ public class LBLibrary extends CordovaPlugin {
             }
         }
     }
+
+
     /**
      * //TODO: test
      * 检查系统应用程序，并打开
      */
-    private void openSample(){
+    private boolean openByPagName(String activityInfo, String uriData) {
         //应用过滤条件
         Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -123,22 +146,35 @@ public class LBLibrary extends CordovaPlugin {
         List<ResolveInfo> mAllApps = mPackageManager.queryIntentActivities(mainIntent, 0);
         //按报名排序
         Collections.sort(mAllApps, new ResolveInfo.DisplayNameComparator(mPackageManager));
-
-        for(ResolveInfo res : mAllApps){
+        String targetPkg = "";
+        String targetClz = "";
+        if (activityInfo.contains("#")) {
+            targetPkg = activityInfo.split("#")[0];
+            targetClz = activityInfo.split("#")[1];
+        } else {
+            targetClz = activityInfo;
+        }
+        for (ResolveInfo res : mAllApps) {
             //该应用的包名和主Activity
             String pkg = res.activityInfo.packageName;
             String cls = res.activityInfo.name;
-
             // 打开QQ
 //            if(pkg.contains("qq")){
-            if(pkg.contains("rebsabbubg")){//sample
+            if (cls.equals(targetClz) && (targetPkg.equals("") || targetPkg.equals(pkg))) {//sample
+//            if (pkg.contains("com.rensanning.cordova.sample")) {//sample
                 ComponentName componet = new ComponentName(pkg, cls);
+                LOG.d(LOG_TAG, "open :" + pkg + "#" + cls);
                 Intent intent = new Intent();
                 intent.setComponent(componet);
+                if (uriData != null && uriData.trim().length() > 0)
+                    intent.setData(Uri.parse(uriData));
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 cordova.getActivity().startActivity(intent);
+                return true;
             }
         }
+        //nofound
+        return false;
     }
 
 }

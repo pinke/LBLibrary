@@ -7,9 +7,9 @@ var urlutil = require('cordova/urlutil');
 
 function LiveBOSLibrary() {
     this.channels = {
-        'loadstart': channel.create('loadstart'),
-        'loadstop': channel.create('loadstop'),
-        'loaderror': channel.create('loaderror'),
+        'start': channel.create('start'),
+        'load': channel.create('load'),
+        'error': channel.create('error'),
         'exit': channel.create('exit')
     };
 }
