@@ -1,0 +1,1 @@
+LiveBOS library for cordova.
